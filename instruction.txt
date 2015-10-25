@@ -99,9 +99,7 @@ Under root access
 psql postgres
 CREATE USER catalog  WITH PASSWORD 'catalogPass' NOCREATEDB NOCREATEUSER;
 CREATE DATABASE catalog WITH OWNER = catalog;
-\du
-\list
-\dt
+
 psql catalog
 
 http://www.postgresql.org/docs/9.1/static/app-createuser.html
