@@ -1,0 +1,190 @@
+
+
+List of Instructions:
+
+
+Grader login:
+ssh -i ~/.ssh/udacity_key.rsa grader@52.27.47.190 -p 2200
+
+Deployed application:
+http://ec2-52-27-47-190.us-west-2.compute.amazonaws.com
+
+-----------------------------------
+NEW USER
+sudo adduser grader
+initial password: grader
+user check:
+cat /etc/passwd 
+
+grader permissions:
+cd /etc/sudoers.d
+touch grader
+nano grader
+# CLOUD_IMG: This file was created/modified by the Cloud Image build process
+grader ALL=(ALL) NOPASSWD:ALL
+------------------------------------------
+PORT CHANGE
+nano /etc/ssh/sshd_config
+Port changed to 2200
+service ssh restart
+-----------------------------------------
+Firewall
+ufw default deny incoming
+ufw default allow outgoing
+ufw status
+ufw allow 2200/tcp
+ufw allow www
+ufw allow 123/tcp
+ufw enable
+ufw status
+----------------------------------------
+GRADER ACCESS
+under grader Access:
+mkdir .ssh
+cd .ssh
+touch authorized_keys
+nano .ssh/authorized_keys
+Insertion of udacity rsa key
+
+chmod 700 .ssh
+chmod 644 .ssh/authorized_keys
+
+grader login
+ssh -i ~/.ssh/graderKey grader@52.27.47.190 -p 2200
+-----------------------------
+UPDATE
+apt-get update
+apt-get upgrade
+apt-get autoremove
+----------------------------------
+TIMEZONE
+dpkg-reconfigure tzdata
+cat /etc/timezone
+------------------------------------
+APACHE 
+http://blog.udacity.com/2015/03/step-by-step-guide-install-lamp-linux-apache-mysql-python-ubuntu.html
+https://www.digitalocean.com/community/tutorials/how-to-install-linux-apache-mysql-php-lamp-stack-on-ubuntu
+sudo apt-get update
+sudo apt-get install apache2
+sudo nano /etc/apache2/httpd.conf
+ServerName localhost
+service apache2 restart
+
+warning alert when restarting apache fixed by:
+http://www.unixmen.com/apache2-aprsockaddrinfoget-failed-for/
+
+apt-get install python-setuptools libapache2-mod-wsgi
+service apache2 restart
+--------------------------------------------
+POSTGRES
+
+apt-get install postgresql
+
+sudo host resolution problem:
+
+root@ip-10-20-12-147:~# sudo -i -u postgres
+sudo: unable to resolve host ip-10-20-12-147
+added ip-10-20-12-147 to /etc/hosts on the first line    
+http://askubuntu.com/questions/59458/error-message-when-i-run-sudo-unable-to-resolve-host-none
+
+sudo -i -u postgres
+psql --version
+
+Remote connections are disabled by default
+http://www.cyberciti.biz/tips/postgres-allow-remote-access-tcp-connection.html
+http://www.postgresql.org/docs/9.1/static/auth-pg-hba-conf.html
+
+Under root access
+
+psql postgres
+CREATE USER catalog  WITH PASSWORD 'catalogPass' NOCREATEDB NOCREATEUSER;
+CREATE DATABASE catalog WITH OWNER = catalog;
+\du
+\list
+\dt
+psql catalog
+
+http://www.postgresql.org/docs/9.1/static/app-createuser.html
+http://www.postgresql.org/docs/9.1/static/app-createdb.html
+
+To connect to catalog db under grader access:
+sudo psql -U catalog -h 127.0.0.1 -d catalog
+
+http://killtheyak.com/use-postgresql-with-django-flask/
+
+apt-get install python-pip
+
+https://discussions.udacity.com/t/importerror-no-module-named-psycopg2-project5/35018/2
+pip install httplib2
+pip install requests
+sudo pip install --upgrade oauth2client
+sudo pip install sqlalchemy
+pip install Flask-SQLAlchemy
+sudo apt-get install python-psycopg2
+
+--------------------------------------------
+GIT
+
+https://discussions.udacity.com/t/git-bash-command-to-upload-project-to-server/28671
+
+apt-get install git
+cd /var/www/
+mkdir catalog
+cd catalog
+git clone https://github.com/Kakadu123/FullStack_CatalogProject.git
+
+Minor adjustements in files:
+engine = create_engine('postgresql://catalog:catalogPass@localhost/catalog')
+python /var/www/catalog/FullStack_CatalogProject/database_setup.py
+
+engine = create_engine('postgresql://catalog:catalogPass@localhost/catalog')
+ALTER TABLE items ALTER COLUMN description TYPE text; 
+python /var/www/catalog/FullStack_CatalogProject/lotsofanimals.py
+
+Javascript origin modified
+engine = create_engine('postgresql://catalog:catalogPass@localhost/catalog')
+
+
+https://www.digitalocean.com/community/tutorials/how-to-deploy-a-flask-application-on-an-ubuntu-vps
+
+available sites file with .conf extension
+http://stackoverflow.com/questions/20591889/site-does-not-exist-error-for-a2ensite
+
+--------------------------------------------
+Initially I tested wsgi pre dummay FlaskApp
+
+sudo nano /var/www/FlaskApp/flaskapp.wsgi
+sudo nano /var/www/FlaskApp/FlaskApp/__init__.py
+sudo nano /etc/apache2/sites-available/FlaskApp.conf
+
+
+sudo a2dissite FlaskApp
+sudo a2ensite catalog
+service apache2 restart
+
+http://ec2-52-27-47-190.us-west-2.compute.amazonaws.com
+http://52.27.47.190/
+sudo nano /var/www/catalog/catalog.wsgi
+sudo nano /var/www/catalog/catalog/catalog.py
+sudo nano /etc/apache2/sites-available/catalog.conf
+
+python /var/www/catalog/catalog/catalog.py
+
+service apache2 restart
+service apache2 reload
+tail /var/log/apache2/error.log
+---------------------------
+ROOT access disabled
+root login is disabled by setting PermitRootLogin no in /etc/ssh/sshd_config
+default:
+PermitRootLogin without-password
+changed to:
+PermitRootLogin no
+sudo service ssh restart
+-----------------------------
+GIT folder access disabled
+http://serverfault.com/questions/128069/how-do-i-prevent-apache-from-serving-the-git-directory
+cd /var/www/catalog
+touch .htaccess 
+echo "RedirectMatch 404 /\.git" >> .htaccess
+
